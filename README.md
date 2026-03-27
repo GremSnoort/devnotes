@@ -1,0 +1,2 @@
+# devnotes
+developer's notes
