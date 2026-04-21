@@ -85,9 +85,9 @@ Standby может использовать и `restore_command`, и `primary_co
 
 Replay может продолжиться WAL из архива через `restore_command`:
 
-- сначала recovery может читать WAL из локального pg_wal;
+- сначала recovery может читать WAL из локального `pg_wal`;
 - когда локально нужного сегмента уже нет, но recovery нужно идти дальше;
-- PostgreSQL начинает пытаться восстанавливать следующие WAL-файлы из архива через restore_command;
+- PostgreSQL начинает пытаться восстанавливать следующие WAL-файлы из архива через `restore_command`;
 - если команда успешно отдает файл, replay продолжается.
 
 То есть `restore_command` — это мост между PostgreSQL recovery и внешним архивом WAL.
@@ -180,7 +180,7 @@ Replay может продолжиться WAL из архива через `res
 - финально парсит GUC-переменную `recovery_target_time`, потому что ее интерпретация зависит от timezone;
 - вычисляет или проверяет GUC-переменную `recovery_target_timeline`.
 
-PITR - это startup-time поведение, но здесь важно различать две группы GUC.
+PITR - это startup-time поведение, важно различать две группы GUC.
 
 - recovery target GUC-переменные, такие как `recovery_target`, `recovery_target_time`, `recovery_target_xid`, `recovery_target_name`, `recovery_target_lsn`, `recovery_target_timeline`, `recovery_target_action`, а также `hot_standby`, в коде объявлены как `PGC_POSTMASTER`, то есть требуют рестарта;
 - связанные recovery/standby GUC-переменные, такие как `restore_command` и `primary_conninfo`, в `guc_tables.c` объявлены как `PGC_SIGHUP`.
@@ -390,7 +390,7 @@ PostgreSQL не позволит остановиться в точке, где 
 - после recovery получаем новую ветку timeline;
 - старую timeline можно потом использовать как альтернативную ветку истории.
 
-PITR создает новую точку ветвления истории (а не просто докатывает архив и запускается).
+PITR создает **новую точку ветвления истории** (а не просто докатывает архив и запускается).
 
 ## Что происходит в конце recovery
 
