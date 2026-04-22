@@ -18,7 +18,7 @@
 
 ## GUC-переменные
 
-- `archive_command` — как PostgreSQL складывает WAL наружу. Работает на primary.
+- `archive_command` — как PostgreSQL складывает WAL наружу. Обычно используется на узле, который архивирует WAL.
 - `restore_command` — как PostgreSQL забирает WAL обратно из архива во время recovery.
 - `primary_conninfo` — как standby подключается к живому primary и получает WAL по сети.
 
@@ -182,8 +182,9 @@ Replay может продолжиться WAL из архива через `res
 
 PITR - это startup-time поведение, важно различать две группы GUC.
 
-- recovery target GUC-переменные, такие как `recovery_target`, `recovery_target_time`, `recovery_target_xid`, `recovery_target_name`, `recovery_target_lsn`, `recovery_target_timeline`, `recovery_target_action`, а также `hot_standby`, в коде объявлены как `PGC_POSTMASTER`, то есть требуют рестарта;
-- связанные recovery/standby GUC-переменные, такие как `restore_command` и `primary_conninfo`, в `guc_tables.c` объявлены как `PGC_SIGHUP`.
+- recovery target GUC-переменные, такие как `recovery_target`, `recovery_target_time`, `recovery_target_xid`, `recovery_target_name`, `recovery_target_lsn`, `recovery_target_timeline`, `recovery_target_action`, в коде объявлены как `PGC_POSTMASTER`, то есть требуют рестарта;
+- отдельная standby/recovery GUC-переменная `hot_standby` тоже объявлена как `PGC_POSTMASTER`, но логически не относится к семейству `recovery_target*`;
+- связанные standby/recovery GUC-переменные, такие как `restore_command` и `primary_conninfo`, в `guc_tables.c` объявлены как `PGC_SIGHUP`.
 
 ## Как выбирается стартовая точка replay
 
@@ -390,7 +391,7 @@ PostgreSQL не позволит остановиться в точке, где 
 - после recovery получаем новую ветку timeline;
 - старую timeline можно потом использовать как альтернативную ветку истории.
 
-PITR создает **новую точку ветвления истории** (а не просто докатывает архив и запускается).
+PITR обычно приводит к **новой точке ветвления истории** (а не просто докатывает архив и запускается).
 
 ## Что происходит в конце recovery
 
