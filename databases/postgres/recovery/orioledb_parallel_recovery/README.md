@@ -58,7 +58,7 @@
   Это отдельный путь для транзакций, чья финализация привязана к builtin PostgreSQL commit/abort path. Такие транзакции сначала ждут соответствующего builtin commit/abort события и только потом переходят в обычную finish/finalization logic.
 
 - **`update_proc_retain_undo_location()`**
-  Это центральный механизм, который связывает локально завершенные transaction states с глобальной publication boundary. Именно здесь startup/main process публикует финальный CSN / XLOG pointer и продвигает `recovery_finished_list_ptr`.
+  Это центральный механизм, который связывает локально завершенные transaction states с глобальной publication boundary. Для `finished_list`-based deferred-finalization path именно здесь startup/main process публикует финальный CSN / XLOG pointer и продвигает `recovery_finished_list_ptr`.
 
 - **shared watermark-и (`recovery_ptr`, `commitPtr`, `recovery_finished_list_ptr`, `retainPtr`)**  
   Эти указатели задают границы, относительно которых recovery process-ы понимают:
@@ -108,20 +108,21 @@
 
 Для координации между process-ами используются общие shared pointer-ы:
 
-- `recovery_ptr` — глобальный watermark общего replay progress: до какого LSN startup/main process уже продвинул recovery;
+- `recovery_ptr` — глобальный watermark replay/dispatched progress, который поддерживает startup/main process: до какого LSN работа уже продвинута и/или разослана дальше по recovery pipeline;
 - `worker_ptrs[i].commitPtr` — replay progress watermark конкретного worker-а;
 - `recovery_finished_list_ptr` — глобальный watermark финальной publication boundary: до какого LSN startup/main process уже догнал deferred finalization и довел transaction visibility до globally published state;
 - `worker_ptrs[i].retainPtr` / `recovery_main_retain_ptr` — watermark-и retain/undo bookkeeping.
 
 Ключевое различие между `recovery_ptr` и `recovery_finished_list_ptr`:
 
-- `recovery_ptr` — это **watermark общего replay progress**: до какого LSN startup/main process уже дошел в WAL/replay pipeline;
+- `recovery_ptr` — это **watermark replay/dispatched progress**, который продвигает startup/main process по мере того, как работа раздается и движется дальше по WAL/replay pipeline;
 - `recovery_finished_list_ptr` — это **watermark финальной publication boundary**: до какого LSN startup/main process уже догнал deferred finalization и опубликовал global transaction visibility.
 
 Иными словами:
 
-- `recovery_ptr` отвечает на вопрос: **до какого LSN recovery уже проигран**;
+- `recovery_ptr` отвечает на вопрос: **до какого LSN startup уже продвинул/разослал recovery pipeline**;
 - `recovery_finished_list_ptr` отвечает на вопрос: **до какого LSN deferred finalization уже доведена до globally visible state**.
+- `recovery_get_current_ptr()` в parallel mode отвечает уже на другой вопрос: **до какого LSN все recovery worker-ы реально дошли**, то есть какая boundary является safe fully-reached boundary для startup/main process.
 
 Reader / writer semantics:
 
