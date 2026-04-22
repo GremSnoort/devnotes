@@ -1,4 +1,4 @@
-# PostgreSQL Targeted Recovery: How It Works and Why It Exists
+# PostgreSQL Targeted Recovery: How It Works
 
 The relevant code paths are primarily:
 
@@ -7,13 +7,13 @@ The relevant code paths are primarily:
 
 ## What targeted recovery is for
 
-Targeted recovery is a Point-In-Time Recovery (PITR) mechanism that allows PostgreSQL to stop replaying WAL not just at the latest available point, but at a specific logical stop condition chosen by the user.
+Targeted recovery is a **Point-In-Time Recovery (PITR)** mechanism that allows PostgreSQL to stop replaying WAL not just at the latest available point, but at a specific logical stop condition chosen by the user.
 
 The intent is straightforward:
 
 - replay WAL until a chosen stop point is reached
 - stop recovery at that point
-- expose a database state that is consistent with that stop point
+- expose a database state that is **consistent** with that stop point
 
 Conceptually, this means:
 
@@ -51,7 +51,7 @@ Important note from the same header:
 - recovery targets are only used during Point-In-Time recovery
 - they are not used for normal standby mode replay
 
-In practice PostgreSQL supports these target modes:
+PostgreSQL supports these target modes:
 
 ### `RECOVERY_TARGET_XID`
 
@@ -175,13 +175,13 @@ This is especially relevant for time-based recovery over custom WAL.
 
 ## What happens after PostgreSQL decides to stop
 
-The flow after a recovery target is reached is more nuanced than a direct "target reached -> end-of-recovery" transition.
+The flow after a recovery target is reached.
 
 In the main replay loop PostgreSQL first:
 
 - detects that the recovery target has been reached
 - applies `recovery_target_action` (`shutdown`, `pause`, or `promote`)
-- and only then, depending on that action, may proceed further toward full end-of-recovery completion
+- and then, depending on that action, may proceed further toward full end-of-recovery completion
 
 This distinction matters because `target reached` and `recovery fully completed` are not the same event.
 
