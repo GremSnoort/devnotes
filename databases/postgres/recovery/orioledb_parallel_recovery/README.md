@@ -20,7 +20,7 @@
 
 - **startup/main recovery process**;
 - **параллельные recovery worker-ы**;
-- в отдельных сценариях также специальный pool для parallel index build. @TODO что это такое, ссылка в код?
+- в отдельных сценариях также специальный **index-build worker subpool**, управляемый через `recovery_idx_pool_size_guc` и `index_build_leader`; это отдельный специализированный путь для parallel index build during recovery.
 
 Роли распределены так:
 
@@ -34,7 +34,7 @@
 
 - main process координирует replay;
 - worker-ы доигрывают свою часть независимо;
-- глобальная видимость части транзакций публикуется позже, когда для этого достигнута безопасная boundary. @TODO что именно является безопасным boundary?
+- глобальная видимость части транзакций публикуется позже, когда для конкретного recovery process достигнута его publication-safe boundary: для startup/main process это `recovery_get_current_ptr()`, а для worker-а — уже опубликованная global boundary в `recovery_finished_list_ptr`.
 
 В Oriole важно различать:
 
@@ -96,7 +96,7 @@
 - `joint_commit_list` — локальный список транзакций, ожидающих joint commit с builtin PostgreSQL transaction;
 - локальные retain/xmin queues.
 
-Это прямо видно в `recovery_init()`:
+Это видно в `recovery_init()`:
 
 - инициализируется локальный `recovery_xid_state_hash`;
 - отдельно `dlist_init(&finished_list)`;
