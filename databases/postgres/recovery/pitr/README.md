@@ -378,7 +378,7 @@ PostgreSQL не позволит остановиться в точке, где 
 - при значении GUC-переменной `recovery_target_timeline = 'latest'` код ищет newest timeline через history files;
 - затем `InitWalRecovery()` проверяет, что checkpoint и `minRecoveryPoint` действительно принадлежат истории запрошенной timeline.
 
-После успешного archive recovery в `StartupXLOG()` PostgreSQL всегда создает новую timeline:
+При завершении archive recovery / promotion path в `StartupXLOG()` PostgreSQL создает новую timeline:
 
 - `newTLI = findNewestTimeLine(recoveryTargetTLI) + 1`;
 - пишет history file через `writeTimeLineHistory(...)`;
@@ -387,7 +387,7 @@ PostgreSQL не позволит остановиться в точке, где 
 
 Практический смысл:
 
-- PITR почти всегда форкает историю WAL;
+- PITR обычно приводит к fork истории WAL при завершении recovery / promotion;
 - после recovery получаем новую ветку timeline;
 - старую timeline можно потом использовать как альтернативную ветку истории.
 
@@ -452,7 +452,7 @@ $PGDATA/recovery.signal
 - `name` target опирается на специальные `XLOG_RESTORE_POINT` записи.
 - `lsn` target работает на уровне физических координат WAL stream.
 - Консистентность проверяется отдельно от достижения target, и target "слишком рано" недопустим.
-- После archive recovery PostgreSQL создает новую timeline, то есть PITR почти всегда приводит к fork истории WAL.
+- При завершении archive recovery / promotion PostgreSQL создает новую timeline, то есть PITR обычно приводит к fork истории WAL.
 
 ## Выводы кратко
 
@@ -463,4 +463,4 @@ PITR в коде PostgreSQL - это:
 3. читать WAL по выбранной timeline с учетом timeline history;
 4. после каждой записи проверять, не достигнут ли recovery target;
 5. при достижении target корректно завершить recovery;
-6. создать новую timeline и перевести сервер в новое состояние.
+6. при завершении recovery / promotion создать новую timeline и перевести сервер в новое состояние.
